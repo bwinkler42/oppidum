@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#172b27"><meta name="description" content="Oppidum für zwei mit Direktverbindung und gemeinsamer Spieluhr.">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Oppidum">
+<title>Oppidum für zwei</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icons/icon-192.png"><link rel="apple-touch-icon" href="./icons/apple-touch-icon.png"><link rel="stylesheet" href="./style.css"></head>
+<body><main><header><h1>Oppidum</h1><p>Für zwei Spieler</p></header>
+<section id="setup" class="setup">
+<form id="create"><h2>Partie erstellen</h2>
+<label>Brettgröße <select name="size"><option value="6">6 × 6</option><option value="8" selected>8 × 8</option><option value="10">10 × 10</option></select></label>
+<label>Zeitmodus <select name="mode"><option value="move">Zeit pro Zug</option><option value="fischer">Fischer-Zuschlag</option><option value="delay">Verzögerung</option><option value="absolute">Gesamtzeit</option><option value="byo">Japanisches Byōyomi</option><option value="free">Ohne Uhr</option></select></label>
+<div id="timeFields"></div>
+<label>Dein Name <input name="name" required maxlength="30" autocomplete="nickname"></label>
+<button>Einladung erstellen</button></form>
+<form id="join"><h2>Einladung annehmen</h2><label>Einladungscode <textarea name="code" required autocapitalize="off" spellcheck="false"></textarea></label>
+<label>Dein Name <input name="name" required maxlength="30" autocomplete="nickname"></label><button>Beitreten</button></form>
+</section>
+<section id="connect" hidden>
+<h2 id="connectTitle">Direktverbindung</h2>
+<label id="answerLabel" hidden>Antwortcode von Weiß <textarea id="answer" spellcheck="false"></textarea></label>
+<button id="accept" hidden>Antwortcode übernehmen</button>
+<label>Dein Code <textarea id="outgoing" readonly></textarea></label>
+<button id="copyCode">Code kopieren</button> <button id="cancel">Zurück zum Start</button>
+</section>
+<p id="status" role="status"></p>
+<section id="game" hidden>
+<div class="toolbar"><button id="leave">Zur Startseite</button></div>
+<div id="scores"></div><p id="turn" role="status"></p>
+<div class="toolbar"><button id="view" aria-pressed="false">3D-Ansicht</button> <button id="pass">Passen</button></div>
+<div id="board" aria-label="Spielbrett"></div><div id="stage" hidden><canvas id="canvas" aria-label="3D-Spielbrett"></canvas></div>
+<div id="choices"></div><p id="last"></p>
+</section>
+<details><summary>Kurzregeln</summary><p>Schwarz beginnt. Siedlungen zählen einen Punkt, Oppida zwei. Weiß erhält einen Startpunkt. Auf freien Feldern kannst du Siedlungen gründen. Auf der eigenen Grundlinie kannst du auf einer Siedlung einen Trupp bilden. Beides verbraucht Vorrat.</p><p>Wähle einen eigenen Trupp und ein markiertes Ziel. Ein Truppverband kann über freie gerade Linien ziehen. Trupps wechseln über gerade Linien eigener Siedlungen und freier Oppida. Auf ein freies Nachbarfeld können sie eine Siedlung gründen.</p><p>Von einer Siedlung aus kann ein Trupp eine benachbarte gegnerische Siedlung wandeln oder einen gegnerischen Trupp abtauschen. Benachbarte eigene Trupps können am Ziel ein Oppidum gründen, wenn dort ein Truppverband steht. Zwei Pässe in Folge, die dritte Wiederholung oder 300 Halbzüge beenden die Partie nach Punkten.</p></details>
+</main><script src="./engine.js"></script><script type="module" src="./app.js"></script></body></html>
