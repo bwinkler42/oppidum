@@ -26,10 +26,13 @@ nötig. Züge werden direkt zwischen den Browsern übertragen. Ein restriktiver
 Router oder eine Firewall kann die Verbindung verhindern. Nach einem
 Neuladen oder Schließen des Tabs ist die laufende Partie verloren.
 
+Die aktuellen Browser komprimieren die Verbindungscodes. Für den Austausch
+brauchen beide dieselbe aktuelle Spielversion.
+
 ## Denkzeit
 
 Standard sind 20 Sekunden pro Zug. Wählbar sind auch Fischer-Zuschlag,
-Verzögerung, Gesamtzeit, japanisches Byōyomi und Spiel ohne Uhr.
+Verzögerung, Gesamtzeit, japanisches Byōyomi und „Ohne Zeitbegrenzung“.
 Die Startwerte lassen sich vor der Einladung einstellen.
 
 Für Zeitablauf gilt die Uhr im Browser von Schwarz. Weiß sieht einen

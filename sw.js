@@ -1,6 +1,6 @@
 const prefix='oppidum-'+self.registration.scope+'-';
-const cacheName=prefix+'direkt-v2';
-const assets=['./','./index.html','./style.css','./engine.js','./app.js','./match.mjs','./clock.mjs',
+const cacheName=prefix+'direkt-v7';
+const assets=['./','./index.html','./style.css','./engine.js','./app.js','./match.mjs','./signaling.mjs','./clock.mjs',
  './scene.js','./castle-geometry.js','./vendor/three.module.js','./vendor/three.core.js','./vendor/OrbitControls.js',
  './manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(cacheName).then(cache=>cache.addAll(assets))));

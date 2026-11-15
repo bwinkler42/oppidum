@@ -7,7 +7,7 @@
 <section id="setup" class="setup">
 <form id="create"><h2>Partie erstellen</h2>
 <label>Brettgröße <select name="size"><option value="6">6 × 6</option><option value="8" selected>8 × 8</option><option value="10">10 × 10</option></select></label>
-<label>Zeitmodus <select name="mode"><option value="move">Zeit pro Zug</option><option value="fischer">Fischer-Zuschlag</option><option value="delay">Verzögerung</option><option value="absolute">Gesamtzeit</option><option value="byo">Japanisches Byōyomi</option><option value="free">Ohne Uhr</option></select></label>
+<label>Zeitmodus <select name="mode"><option value="free">Ohne Zeitbegrenzung</option><option value="move" selected>Zeit pro Zug</option><option value="fischer">Fischer-Zuschlag</option><option value="delay">Verzögerung</option><option value="absolute">Gesamtzeit</option><option value="byo">Japanisches Byōyomi</option></select></label>
 <div id="timeFields"></div>
 <label>Dein Name <input name="name" required maxlength="30" autocomplete="nickname"></label>
 <button>Einladung erstellen</button></form>
@@ -21,13 +21,14 @@
 <label>Dein Code <textarea id="outgoing" readonly></textarea></label>
 <button id="copyCode">Code kopieren</button> <button id="cancel">Zurück zum Start</button>
 </section>
-<p id="status" role="status"></p>
 <section id="game" hidden>
 <div class="toolbar"><button id="leave">Zur Startseite</button></div>
 <div id="scores"></div><p id="turn" role="status"></p>
-<div class="toolbar"><button id="view" aria-pressed="false">3D-Ansicht</button> <button id="pass">Passen</button></div>
+<div class="toolbar"><button id="view" aria-pressed="false">3D-Ansicht</button> <span id="viewTools" role="group" aria-label="3D-Steuerung" hidden><button id="placeMode" aria-pressed="true">Setzen</button> <button id="rotateMode" aria-pressed="false">Drehen</button> <button id="resetView">Eigene Grundlinie</button></span> <button id="pass">Passen</button></div>
 <div id="board" aria-label="Spielbrett"></div><div id="stage" hidden><canvas id="canvas" aria-label="3D-Spielbrett"></canvas></div>
-<div id="choices"></div><p id="last"></p>
+<p id="moveHint" class="move-hint"></p><div id="choices"></div>
+<p id="last"></p>
 </section>
+<p id="status" role="status"></p>
 <details><summary>Kurzregeln</summary><p>Schwarz beginnt. Siedlungen zählen einen Punkt, Oppida zwei. Weiß erhält einen Startpunkt. Auf freien Feldern kannst du Siedlungen gründen. Auf der eigenen Grundlinie kannst du auf einer Siedlung einen Trupp bilden. Beides verbraucht Vorrat.</p><p>Wähle einen eigenen Trupp und ein markiertes Ziel. Ein Truppverband kann über freie gerade Linien ziehen. Trupps wechseln über gerade Linien eigener Siedlungen und freier Oppida. Auf ein freies Nachbarfeld können sie eine Siedlung gründen.</p><p>Von einer Siedlung aus kann ein Trupp eine benachbarte gegnerische Siedlung wandeln oder einen gegnerischen Trupp abtauschen. Benachbarte eigene Trupps können am Ziel ein Oppidum gründen, wenn dort ein Truppverband steht. Zwei Pässe in Folge, die dritte Wiederholung oder 300 Halbzüge beenden die Partie nach Punkten.</p></details>
 </main><script src="./engine.js"></script><script type="module" src="./app.js"></script></body></html>

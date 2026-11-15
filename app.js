@@ -1,3 +1,4 @@
+import {encode,decode} from './signaling.mjs';
 import {Match} from './match.mjs';
 import {modes} from './clock.mjs';
 const E=globalThis.Sprung;
@@ -18,6 +19,8 @@ const descriptions={
   free:'Die Partie läuft ohne Zeitlimit pro Zug.'
 };
 let session,game,match,peer,channel,selected=null,view,viewMode=false,timing=null;
+let choiceTarget=null,rotating=false;
+let boardLayout;
 let waiting=false,latency=Infinity,closed=false;
 const now=()=>performance.now();
 const nameOf=value=>String(value??'').trim().slice(0,30);
@@ -37,7 +40,7 @@ function fieldsForMode(){
 form.elements.mode.onchange=fieldsForMode;
 fieldsForMode();
 function update(snapshot,hostTime){
-  if(!game||game.state.ply!==snapshot.state.ply||snapshot.outcome)selected=null;
+  if(!game||game.state.ply!==snapshot.state.ply||snapshot.outcome){selected=null;choiceTarget=null;}
   game=snapshot;
   if(!timing)timing={received:now(),server:hostTime};
   waiting=false;
@@ -83,12 +86,6 @@ function configure(dc,guestName){
     }catch{status('Die Nachricht konnte nicht verarbeitet werden.');}
   };
 }
-const encode=desc=>btoa(JSON.stringify({type:desc.type,sdp:desc.sdp}));
-function decode(code,type){
-  const desc=JSON.parse(atob(code.replace(/\s/g,'')));
-  if(desc.type!==type||typeof desc.sdp!=='string')throw Error('Der Code passt nicht zu diesem Schritt.');
-  return desc;
-}
 async function prepareCode(description){
   await peer.setLocalDescription(description);
   if(peer.iceGatheringState!=='complete')await new Promise(resolve=>{
@@ -101,7 +98,7 @@ async function prepareCode(description){
     const timer=setTimeout(done,10000);
     peer.addEventListener('icegatheringstatechange',check);check();
   });
-  $('outgoing').value=encode(peer.localDescription);
+  $('outgoing').value=await encode(peer.localDescription);
 }
 function connect(side){
   peer=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
@@ -129,7 +126,7 @@ join.onsubmit=async event=>{
   event.preventDefault();if(session)return;
   const options=Object.fromEntries(new FormData(join));
   try{
-    const offer=decode(options.code,'offer');
+    const offer=await decode(options.code,'offer');
     connect(2);peer.ondatachannel=event=>configure(event.channel,nameOf(options.name));
     $('connectTitle').textContent='Schick den Antwortcode an Schwarz';
     status('Antwortcode wird erzeugt …');
@@ -140,7 +137,7 @@ join.onsubmit=async event=>{
 $('accept').onclick=async()=>{
   try{
     $('accept').disabled=true;
-    await peer.setRemoteDescription(decode($('answer').value,'answer'));
+    await peer.setRemoteDescription(await decode($('answer').value,'answer'));
     if(!game)status('Warte auf die Direktverbindung …');
   }catch(error){$('accept').disabled=false;status('Antwortcode: '+error.message);}
 };
@@ -165,14 +162,8 @@ function choose(index){
   const actions=legalActions();
   const targets=actions.filter(a=>a.to===index&&(selected===null?a.from===undefined:a.from===selected));
   if(targets.length===1){submit(targets[0]);return;}
-  if(targets.length>1){
-    $('choices').replaceChildren(...targets.map(a=>{
-      const button=document.createElement('button');
-      button.textContent={slide:'Verband verschieben',hop:'Trupp übertragen',forge:'Oppidum gründen'}[a.type];
-      button.onclick=()=>submit(a);return button;
-    }));
-    return;
-  }
+  if(targets.length>1){choiceTarget=index;render();return;}
+  choiceTarget=null;
   selected=index!==selected&&actions.some(a=>a.from===index)?index:null;render();
 }
 function tick(){
@@ -213,34 +204,77 @@ function render(){
     timer.id='timer'+p;timer.className='timer';
     box.append(title,E.score(state,p)+' Punkte · Vorrat '+state.reserve[p]+' · ',timer);return box;
   }));
-  const board=$('board');board.style.gridTemplateColumns='repeat('+n+',1fr)';
-  board.replaceChildren(...Array.from({length:n*n},(_,screen)=>{
-    const i=session.side===1?n*n-1-screen:screen;
-    const v=state.board[i],p=E.owner(v),button=document.createElement('button');
-    button.className='cell'+((Math.floor(screen/n)+screen%n)%2?' alt':'')+(targets.includes(i)?' target':'')+(selected===i?' selected':'')+(E.home(i,1,n)||E.home(i,2,n)?' home':'');
-    button.dataset.cell=i;button.ariaLabel=E.coord(i,n)+(p?' '+(p===1?'Schwarz':'Weiß'):' frei');
-    if(v){const piece=document.createElement('span');piece.className='piece'+(p===2?' white':'')+(E.isCastle(v)?' fort':'');piece.textContent=E.isCarrier(v,p)?'●':'';button.append(piece);}
-    button.onclick=()=>choose(i);return button;
+  const options=choiceTarget===null?[]:actions.filter(a=>a.from===selected&&a.to===choiceTarget);
+  $('moveHint').textContent=!actions.length?'':options.length>1
+    ? 'Wähle den Zug nach '+E.coord(choiceTarget,n)+'.'
+    : selected===null?'Tippe ein freies Feld zum Siedeln oder wähle einen eigenen Trupp. Auf der eigenen Grundlinie kannst du einen Trupp bilden.'
+    : 'Tippe ein markiertes Ziel. Tippe den Trupp erneut, um die Auswahl aufzuheben.';
+  $('choices').replaceChildren(...options.map(action=>{
+    const button=document.createElement('button');
+    button.textContent={slide:'Ganzer Verband zieht',hop:state.board[action.to]===0?'Trupp gründet Siedlung': 'Trupp übertragen',forge:'Oppidum gründen'}[action.type];
+    button.onclick=()=>submit(action);return button;
   }));
-  if(selected===null)$('choices').replaceChildren();
+  const board=$('board');
+  const layout=n+':'+session.side;
+  if(boardLayout!==layout){
+    boardLayout=layout;
+    board.style.setProperty('--board-size',n);
+    board.replaceChildren(...Array.from({length:n*n},(_,screen)=>{
+      const i=session.side===1?n*n-1-screen:screen;
+      const button=document.createElement('button');
+      button.className='cell'+((Math.floor(screen/n)+screen%n)%2?' alt':'')+
+        (E.home(i,1,n)||E.home(i,2,n)?' home':'');
+      button.dataset.cell=i;
+      button.onclick=()=>choose(i);
+      return button;
+    }));
+  }
+  for(const button of board.children){
+    const i=Number(button.dataset.cell),v=state.board[i],p=E.owner(v);
+    button.classList.toggle('target',targets.includes(i));
+    button.classList.toggle('selected',selected===i);
+    if(button.dataset.piece===String(v))continue;
+    button.dataset.piece=v;
+    button.ariaLabel=E.coord(i,n)+(p?' '+(p===1?'Schwarz':'Weiß'):' frei');
+    button.replaceChildren();
+    if(v){
+      const piece=document.createElement('span');
+      piece.className='piece'+(p===2?' white':'')+(E.isCastle(v)?' fort':'');
+      piece.textContent=E.isCarrier(v,p)?'●':'';
+      button.append(piece);
+    }
+  }
   if(viewMode&&view)view.renderState(state,selected,targets,null);
   tick();
 }
+function setRotation(enabled){
+  rotating=enabled;
+  view.down=null;
+  view.controls.enabled=enabled;
+  $('placeMode').setAttribute('aria-pressed',String(!enabled));
+  $('rotateMode').setAttribute('aria-pressed',String(enabled));
+}
+$('placeMode').onclick=()=>setRotation(false);
+$('rotateMode').onclick=()=>setRotation(true);
 $('view').onclick=async()=>{
   const button=$('view');button.disabled=true;
   try{
     if(!viewMode&&!view){
-      const {BoardView}=await import('./scene.js');view=new BoardView($('canvas'),choose);
+      const {BoardView}=await import('./scene.js');view=new BoardView($('canvas'),index=>{if(viewMode&&!rotating)choose(index);});
+      view.controls.enableDamping=false;
       view.setSmoke(false);
     }
     viewMode=!viewMode;$('stage').hidden=!viewMode;$('board').hidden=viewMode;
-    if(viewMode){view.controls.enableRotate=false;view.setSide(session.side);}
+    if(viewMode){setRotation(false);view.setSide(session.side);}
+    $('viewTools').hidden=!viewMode;
     view.setActive(viewMode);
     button.textContent=viewMode?'2D-Ansicht':'3D-Ansicht';
     button.setAttribute('aria-pressed',String(viewMode));render();
   }catch{status('3D konnte auf diesem Gerät nicht gestartet werden.');}
   finally{button.disabled=false;}
 };
+$('resetView').onclick=()=>view?.setSide(session.side);
+$('pass').onclick=()=>submit({type:'pass'});
 $('leave').onclick=()=>location.reload();
 setInterval(()=>{
   if(match&&session?.side===1&&!closed&&match.expire(now()))publish();
